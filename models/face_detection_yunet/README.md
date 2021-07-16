@@ -9,6 +9,10 @@ Run the following command to try the demo:
 python detect.py --image /path/to/image --model ./weights/yunet.onnx
 ```
 
+## Licence
+
+Please see [LICENCE](./LICENCE).
+
 ## Reference
 
 - https://github.com/ShiqiYu/libfacedetection
