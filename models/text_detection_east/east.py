@@ -54,7 +54,7 @@ class EAST:
         #         |          |
         #      (x0, y0)---(x3, y3)
         # dets: [x0, y0, x1, y1, x2, y2, x3, y3, confidence]
-        dets = np.empty(shape=(0, 9), dtype=np.float)
+        dets = np.empty(shape=(0, 9), dtype=np.float32)
         for i in indices:
             # get 4 vertices of the rotated rect
             v = cv.boxPoints(boxes[i[0]])

@@ -3,10 +3,7 @@
 #
 # Copyright (C) 2021, OpenCV China, all rights reserved.
 # Third party copyrights are property of their respective owners.
-# This file is taken and modified from https://github.com/opencv/opencv/blob/master/samples/dnn/text_detection.py.
 
-
-# Import required modules
 import argparse
 
 import cv2 as cv
@@ -51,14 +48,14 @@ def main():
     model = EAST(model=args.model,
                  inputNames='',
                  outputNames=["feature_fusion/Conv_7/Sigmoid", "feature_fusion/concat_3"],
-                 inputSize=[args.height, args.width],
+                 inputSize=[args.width, args.height],
                  confThreshold=args.conf,
                  nmsThreshold=args.nms)
 
     # Open a video file or an image file or a camera stream
     cap = cv.VideoCapture(args.input if args.input else 0)
 
-    # vis
+    # Set up a window for visualization
     kWinName = "EAST: An Efficient and Accurate Scene Text Detector"
     cv.namedWindow(kWinName, cv.WINDOW_NORMAL)
 
@@ -75,8 +72,8 @@ def main():
         tickmeter.stop()
 
         # Put efficiency information
-        label = 'Inference time: %.2f ms' % (tickmeter.getTimeMilli())
-        cv.putText(frame, label, (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
+        time_msg = 'Inference time: %.2f ms' % (tickmeter.getTimeMilli())
+        cv.putText(frame, time_msg, (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
 
         # Draw rotated bounding boxes
         frame = draw_rbbox(frame, results)
