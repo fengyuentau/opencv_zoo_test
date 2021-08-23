@@ -6,10 +6,13 @@ import cv2 as cv
 from scipy.io import loadmat
 
 class WIDERFace(object):
-    def __init__(self, subset='val', iou_threshold=0.5):
+    def __init__(self, subset='val', iouThreshold=0.5, testList=None, testSize=None, repeat=None):
         assert subset.lower() in ['val']
         self.subset = subset
-        self.iou_threshold = iou_threshold
+        self.iou_threshold = iouThreshold
+        self.test_list = testList
+        self.test_size = testSize
+        self.repeat = repeat
 
         self.parent_path = os.path.dirname(os.path.realpath(__file__))
         self.img_path = '{}/data/WIDER_{}/images'.format(self.parent_path, self.subset)
@@ -37,22 +40,44 @@ class WIDERFace(object):
         # Collect all image names
         pred = dict()
         img_list = list()
-        for idx_e, event_name in enumerate(self.event_list):
-            event_name = str(event_name[0][0])
-            pred[event_name] = dict()
-            for idx_f, file_name in enumerate(self.file_list[idx_e][0]):
-                file_name = str(file_name[0][0]) # without suffix
-                img_list.append((event_name, file_name))
-                pred[event_name][file_name] = []
 
         # Forward and collect results
-        pbar = tqdm.tqdm(img_list)
-        for event_name, file_name in pbar:
-            img = cv.imread(os.path.join(self.img_path, '{}/{}.jpg'.format(event_name, file_name)))
-            result = model.infer(img)
-            pred[event_name][file_name] = result
+        if self.test_list is None:
+            for idx_e, event_name in enumerate(self.event_list):
+                event_name = str(event_name[0][0])
+                pred[event_name] = dict()
+                for idx_f, file_name in enumerate(self.file_list[idx_e][0]):
+                    file_name = str(file_name[0][0]) # without suffix
+                    img_list.append((event_name, file_name))
+                    pred[event_name][file_name] = []
 
-        self._evaluate(pred)
+            pbar = tqdm.tqdm(img_list)
+            for event_name, file_name in pbar:
+                img = cv.imread(os.path.join(self.img_path, '{}/{}.jpg'.format(event_name, file_name)))
+                result = model.infer(img)
+                pred[event_name][file_name] = result
+
+            self._evaluate(pred)
+        else:
+            tm = cv.TickMeter()
+            avg_infer_time = dict()
+            for img_name in self.test_list:
+                img = cv.imread(os.path.join(self.img_path, img_name))
+                for target_size in self.test_size:
+                    infer_time = []
+                    pbar = tqdm.tqdm(range(self.repeat))
+                    for _ in pbar:
+                        pbar.set_description('Benchmarking on {} of size {}'.format(img_name, str(target_size)))
+                        tm.start()
+                        result = model.infer(img, target_size)
+                        tm.stop()
+                        infer_time.append(tm.getTimeMilli())
+                        tm.reset()
+
+                    avg_infer_time[str(target_size)] = sum(infer_time) / self.repeat
+
+            print(avg_infer_time)
+
 
 
     def _evaluate(self, pred, thresh_num=1000):
