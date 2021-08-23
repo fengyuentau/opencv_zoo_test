@@ -19,6 +19,11 @@ class CRNN:
             [self.inputSize[0] - 1, 0],
             [self.inputSize[0] - 1, self.inputSize[1] - 1]], dtype="float32")
 
+    def setBackend(self, backend):
+        self.model.setPreferableBackend(backend)
+
+    def setTarget(self, target):
+        self.model.setPreferableTarget(target)
 
     def __preprocess(self, image, rbbox):
         # Remove conf, reshape and ensure all is np.float32

@@ -20,6 +20,12 @@ class EAST:
 
         self.detector = cv.dnn.readNet(model)
 
+    def setBackend(self, backend):
+        self.model.setPreferableBackend(backend)
+
+    def setTarget(self, target):
+        self.model.setPreferableTarget(target)
+
     def __preprocess(self, image):
         return cv.dnn.blobFromImage(image, 1.0, (self.inputWidth, self.inputHeight), (123.68, 116.78, 103.94), True, False)
 

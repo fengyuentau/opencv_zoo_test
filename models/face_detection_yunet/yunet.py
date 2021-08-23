@@ -24,6 +24,12 @@ class YuNet:
         self.steps = [8, 16, 32, 64]
         self.variance = [0.1, 0.2]
 
+    def setBackend(self, backend):
+        self.model.setPreferableBackend(backend)
+
+    def setTarget(self, target):
+        self.model.setPreferableTarget(target)
+
     def __preprocess(self, image):
         return cv.dnn.blobFromImage(image)
 
@@ -57,7 +63,7 @@ class YuNet:
             nms_threshold=self.nmsThreshold,
             top_k=self.topK
         ) # box_num x class_num
-        if keepIdx.shape[0] > 0:
+        if len(keepIdx) > 0:
             dets = dets[keepIdx]
             dets = np.squeeze(dets, axis=1)
         dets = dets[:self.keepTopK]
@@ -79,7 +85,7 @@ class YuNet:
         feature_maps = [feature_map_3th, feature_map_4th,
                         feature_map_5th, feature_map_6th]
 
-        self.priors = np.empty(shape=[0, 4])
+        priors = []
         for k, f in enumerate(feature_maps):
             min_sizes = self.min_sizes[k]
             for i, j in product(range(f[0]), range(f[1])): # i->origHeight, j->origWidth
@@ -90,9 +96,8 @@ class YuNet:
                     cx = (j + 0.5) * self.steps[k] / self.origWidth
                     cy = (i + 0.5) * self.steps[k] / self.origHeight
 
-                    self.priors = np.vstack(
-                        (self.priors, np.array([cx, cy, s_kx, s_ky]))
-                    )
+                    priors.append([cx, cy, s_kx, s_ky])
+        self.priors = np.array(priors, dtype=np.float32)
 
     def __decode(self, loc, conf, iou):
         # get score
@@ -106,28 +111,24 @@ class YuNet:
         scores = np.sqrt(cls_scores * iou_scores)
         scores = scores[:, np.newaxis]
 
+        origScale = np.array([self.origWidth, self.origHeight])
+
         # get bboxes
         bboxes = np.hstack((
-            self.priors[:, 0:2]+loc[:, 0:2]*self.variance[0]*self.priors[:, 2:4],
-            self.priors[:, 2:4]*np.exp(loc[:, 2:4]*self.variance)
+            (self.priors[:, 0:2]+loc[:, 0:2]*self.variance[0]*self.priors[:, 2:4]) * origScale,
+            (self.priors[:, 2:4]*np.exp(loc[:, 2:4]*self.variance)) * origScale
         ))
         # (x_c, y_c, w, h) -> (x1, y1, w, h)
         bboxes[:, 0:2] -= bboxes[:, 2:4] / 2
-        # scale recover
-        bbox_scale = np.array([self.origWidth, self.origHeight]*2)
-        bboxes = bboxes * bbox_scale
 
         # get landmarks
         landmarks = np.hstack((
-            self.priors[:, 0:2]+loc[:,  4: 6]*self.variance[0]*self.priors[:, 2:4],
-            self.priors[:, 0:2]+loc[:,  6: 8]*self.variance[0]*self.priors[:, 2:4],
-            self.priors[:, 0:2]+loc[:,  8:10]*self.variance[0]*self.priors[:, 2:4],
-            self.priors[:, 0:2]+loc[:, 10:12]*self.variance[0]*self.priors[:, 2:4],
-            self.priors[:, 0:2]+loc[:, 12:14]*self.variance[0]*self.priors[:, 2:4]
+            (self.priors[:, 0:2]+loc[:,  4: 6]*self.variance[0]*self.priors[:, 2:4]) * origScale,
+            (self.priors[:, 0:2]+loc[:,  6: 8]*self.variance[0]*self.priors[:, 2:4]) * origScale,
+            (self.priors[:, 0:2]+loc[:,  8:10]*self.variance[0]*self.priors[:, 2:4]) * origScale,
+            (self.priors[:, 0:2]+loc[:, 10:12]*self.variance[0]*self.priors[:, 2:4]) * origScale,
+            (self.priors[:, 0:2]+loc[:, 12:14]*self.variance[0]*self.priors[:, 2:4]) * origScale
         ))
-        # scale recover
-        landmark_scale = np.array([self.origWidth, self.origHeight]*5)
-        landmarks = landmarks * landmark_scale
 
         dets = np.hstack((bboxes, landmarks, scores))
         return dets
