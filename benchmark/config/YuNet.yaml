@@ -1,0 +1,15 @@
+Dataset:
+  name: "WIDERFace"
+  subset: "val"
+Model:
+  name: "YuNet"
+  model: "models/face_detection_yunet/face_detection_yunet.onnx"
+  inputNames: ""
+  outputNames:
+    - "loc"
+    - "conf"
+    - "iou"
+  confThreshold: 0.6
+  nmsThreshold: 0.3
+  topK: 5000
+  keepTopK: 750

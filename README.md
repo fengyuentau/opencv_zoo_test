@@ -2,7 +2,11 @@
 
 This is a test repo for the incoming Model Zoo for OpenCV.
 
-## Contents
+NOTE:
+- To clone this repo, please install [git-lfs](https://git-lfs.github.com/) and use `git lfs clone`.
+- To run benchmark, please read [benchmark README](./benchmark/README.md)
+
+## Models
 - [Text Detection](#text-detection)
 - [Face Detection](#face-detection)
 - [Object Tracking](#object-tracking)
