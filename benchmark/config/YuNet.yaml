@@ -1,6 +1,15 @@
 Dataset:
   name: "WIDERFace"
   subset: "val"
+  iouThreshold: 0.5
+  testList:
+    - "12--Group/12_Group_Group_12_Group_Group_12_253.jpg"
+    - "18--Concerts/18_Concerts_Concerts_18_127.jpg"
+    - "4--Dancing/4_Dancing_Dancing_4_489.jpg"
+  testSize: # [w, h], default original scale
+    - [1080, 1920]
+    - [720, 1280]
+  repeat: 100 # default 100
 Model:
   name: "YuNet"
   model: "models/face_detection_yunet/face_detection_yunet.onnx"

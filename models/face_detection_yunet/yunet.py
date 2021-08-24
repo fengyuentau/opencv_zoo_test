@@ -30,30 +30,33 @@ class YuNet:
     def setTarget(self, target):
         self.model.setPreferableTarget(target)
 
-    def __preprocess(self, image):
-        return cv.dnn.blobFromImage(image)
+    def _preprocess(self, image, target_size):
+        return cv.dnn.blobFromImage(image, size=target_size)
 
-    def infer(self, image):
-        self.origHeight, self.origWidth, _ = image.shape
+    def infer(self, image, target_size=None):
+        h, w, _ = image.shape
+        original_size = [w, h]
+        if target_size is None:
+            target_size = [w, h]
 
-        # preprocess
-        inputBlob = self.__preprocess(image)
+        # Preprocess
+        inputBlob = self._preprocess(image, target_size)
 
-        # forward
+        # Forward
         self.model.setInput(inputBlob)
         outputBlob = self.model.forward(self.outputNames)
 
-        # postprocess
-        results = self.__postprocess(outputBlob)
+        # Postprocess
+        results = self._postprocess(outputBlob, target_size, original_size)
 
         return results
 
-    def __postprocess(self, outputBlob):
+    def _postprocess(self, outputBlob, target_size, original_size):
         # Generate priors
-        self.__priorGen()
+        self._priorGen(target_size)
 
         # Decode
-        dets = self.__decode(outputBlob[0], outputBlob[1], outputBlob[2])
+        dets = self._decode(outputBlob, original_size)
 
         # NMS
         keepIdx = cv.dnn.NMSBoxes(
@@ -70,9 +73,10 @@ class YuNet:
 
         return dets
 
-    def __priorGen(self):
-        feature_map_2th = [int(int((self.origHeight + 1) / 2) / 2),
-                           int(int((self.origWidth + 1) / 2) / 2)]
+    def _priorGen(self, target_size):
+        w, h = target_size
+        feature_map_2th = [int(int((h + 1) / 2) / 2),
+                           int(int((w + 1) / 2) / 2)]
         feature_map_3th = [int(feature_map_2th[0] / 2),
                            int(feature_map_2th[1] / 2)]
         feature_map_4th = [int(feature_map_3th[0] / 2),
@@ -88,18 +92,19 @@ class YuNet:
         priors = []
         for k, f in enumerate(feature_maps):
             min_sizes = self.min_sizes[k]
-            for i, j in product(range(f[0]), range(f[1])): # i->origHeight, j->origWidth
+            for i, j in product(range(f[0]), range(f[1])): # i->h, j->w
                 for min_size in min_sizes:
-                    s_kx = min_size / self.origWidth
-                    s_ky = min_size / self.origHeight
+                    s_kx = min_size / w
+                    s_ky = min_size / h
 
-                    cx = (j + 0.5) * self.steps[k] / self.origWidth
-                    cy = (i + 0.5) * self.steps[k] / self.origHeight
+                    cx = (j + 0.5) * self.steps[k] / w
+                    cy = (i + 0.5) * self.steps[k] / h
 
                     priors.append([cx, cy, s_kx, s_ky])
         self.priors = np.array(priors, dtype=np.float32)
 
-    def __decode(self, loc, conf, iou):
+    def _decode(self, outputBlob, original_size):
+        loc, conf, iou = outputBlob
         # get score
         cls_scores = conf[:, 1]
         iou_scores = iou[:, 0]
@@ -111,23 +116,23 @@ class YuNet:
         scores = np.sqrt(cls_scores * iou_scores)
         scores = scores[:, np.newaxis]
 
-        origScale = np.array([self.origWidth, self.origHeight])
+        scale = np.array(original_size)
 
         # get bboxes
         bboxes = np.hstack((
-            (self.priors[:, 0:2]+loc[:, 0:2]*self.variance[0]*self.priors[:, 2:4]) * origScale,
-            (self.priors[:, 2:4]*np.exp(loc[:, 2:4]*self.variance)) * origScale
+            (self.priors[:, 0:2]+loc[:, 0:2]*self.variance[0]*self.priors[:, 2:4]) * scale,
+            (self.priors[:, 2:4]*np.exp(loc[:, 2:4]*self.variance)) * scale
         ))
         # (x_c, y_c, w, h) -> (x1, y1, w, h)
         bboxes[:, 0:2] -= bboxes[:, 2:4] / 2
 
         # get landmarks
         landmarks = np.hstack((
-            (self.priors[:, 0:2]+loc[:,  4: 6]*self.variance[0]*self.priors[:, 2:4]) * origScale,
-            (self.priors[:, 0:2]+loc[:,  6: 8]*self.variance[0]*self.priors[:, 2:4]) * origScale,
-            (self.priors[:, 0:2]+loc[:,  8:10]*self.variance[0]*self.priors[:, 2:4]) * origScale,
-            (self.priors[:, 0:2]+loc[:, 10:12]*self.variance[0]*self.priors[:, 2:4]) * origScale,
-            (self.priors[:, 0:2]+loc[:, 12:14]*self.variance[0]*self.priors[:, 2:4]) * origScale
+            (self.priors[:, 0:2]+loc[:,  4: 6]*self.variance[0]*self.priors[:, 2:4]) * scale,
+            (self.priors[:, 0:2]+loc[:,  6: 8]*self.variance[0]*self.priors[:, 2:4]) * scale,
+            (self.priors[:, 0:2]+loc[:,  8:10]*self.variance[0]*self.priors[:, 2:4]) * scale,
+            (self.priors[:, 0:2]+loc[:, 10:12]*self.variance[0]*self.priors[:, 2:4]) * scale,
+            (self.priors[:, 0:2]+loc[:, 12:14]*self.variance[0]*self.priors[:, 2:4]) * scale
         ))
 
         dets = np.hstack((bboxes, landmarks, scores))
