@@ -1,15 +1,22 @@
-Dataset:
-  name: "WIDERFace"
-  subset: "val"
-  iouThreshold: 0.5
-  testList:
-    - "12--Group/12_Group_Group_12_Group_Group_12_253.jpg"
-    - "18--Concerts/18_Concerts_Concerts_18_127.jpg"
-    - "4--Dancing/4_Dancing_Dancing_4_489.jpg"
-  testSize: # [w, h], default original scale
-    - [1080, 1920]
-    - [720, 1280]
+Data:
+  name: "Images for Face Detection"
+  url: "https://drive.google.com/u/0/uc?id=1lOAliAIeOv4olM65YDzE55kn6XjiX2l6&export=download"
+  sha: "0ba67a9cfd60f7fdb65cdb7c55a1ce76c1193df1"
+  filename: "face_detection.zip"
+  parentPath: "benchmark/data"
+
+Benchmark:
+  name: "Face Detection Benchmark"
+  fileList:
+    - "group.jpg"
+    - "concerts.jpg"
+    - "dance.jpg"
+  sizes: # [w, h], default original scale
+    - [160, 120]
+    - [640, 480]
   repeat: 100 # default 100
+  parentPath: "benchmark/data/face_detection"
+
 Model:
   name: "YuNet"
   model: "models/face_detection_yunet/face_detection_yunet.onnx"

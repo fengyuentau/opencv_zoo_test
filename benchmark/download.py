@@ -5,26 +5,26 @@ import sys
 import tarfile
 import zipfile
 import requests
+import os.path as osp
 
 from urllib.request import urlopen
+from urllib.parse import urlparse
 
 
-class Dataset:
+class Downloader:
     MB = 1024*1024
     BUFSIZE = 10*MB
 
     def __init__(self, **kwargs):
-        self.name = kwargs.pop('name')
-        self.url = kwargs.pop('url', None)
-        self.downloader = kwargs.pop('downloader', None)
-        self.filename = kwargs.pop('filename')
-        self.sha = kwargs.pop('sha', None)
-        self.archive = kwargs.pop('archive', None)
-        self.member = kwargs.pop('member', None)
-        self.decompress = kwargs.pop('decompress', None)
+        self._name = kwargs.pop('name')
+        self._url = kwargs.pop('url', None)
+        self._filename = kwargs.pop('filename')
+        self._sha = kwargs.pop('sha', None)
+        self._saveTo = kwargs.pop('saveTo', './data')
+        self._extractTo = kwargs.pop('extractTo', './data')
 
     def __str__(self):
-        return 'Dataset <{}>'.format(self.name)
+        return 'Downloader for <{}>'.format(self._name)
 
     def printRequest(self, r):
         def getMB(r):
@@ -36,90 +36,83 @@ class Dataset:
         print('  {} {} [{} Mb]'.format(r.getcode(), r.msg, getMB(r)))
 
     def verifyHash(self):
-        if not self.sha:
+        if not self._sha:
             return False
-        print('  expect {}'.format(self.sha))
+        print('  expect {}'.format(self._sha))
         sha = hashlib.sha1()
         try:
-            with open(self.filename, 'rb') as f:
+            with open(osp.join(self._saveTo, self._filename), 'rb') as f:
                 while True:
                     buf = f.read(self.BUFSIZE)
                     if not buf:
                         break
                     sha.update(buf)
             print('  actual {}'.format(sha.hexdigest()))
-            return self.sha == sha.hexdigest()
+            return self._sha == sha.hexdigest()
         except Exception as e:
             print('  catch {}'.format(e))
 
     def get(self):
         if self.verifyHash():
             print('  hash match - skipping download')
-            if self.decompress:
-                print('  extracting')
-                self.extract_all()
-                print('  extracting done')
-            return True
-
-        basedir = os.path.dirname(self.filename)
-        if basedir and not os.path.exists(basedir):
-            print('  creating directory: ' + basedir)
-            os.makedirs(basedir, exist_ok=True)
-
-        if self.archive and self.member:
-            assert(self.archive and self.member)
-            print('  hash check failed - extracting')
-            print('  get {}'.format(self.member))
-            self.extract()
-        elif self.url:
-            print('  hash check failed - downloading')
-            print('  get {}'.format(self.url))
-            self.download()
         else:
-            assert self.downloader
-            print('  hash check failed - downloading')
-            sz = self.downloader(self.filename)
-            print('  size = %.2f Mb' % (sz / (1024.0 * 1024)))
+            basedir = os.path.dirname(self._saveTo)
+            if basedir and not os.path.exists(basedir):
+                print('  creating directory: ' + basedir)
+                os.makedirs(basedir, exist_ok=True)
 
-        print(' done')
-        print(' file {}'.format(self.filename))
-        if self.verifyHash() and self.decompress:
-            print('  hash match - extracting')
-            self.extract_all()
-            print('  extracting done')
+            print('  hash check failed - downloading')
+            if 'drive.google.com' in self._url:
+                urlquery = urlparse(self._url).query.split('&')
+                for q in urlquery:
+                    if 'id=' in q:
+                        gid = q[3:]
+                sz = GDrive(gid)(osp.join(self._saveTo, self._filename))
+                print('  size = %.2f Mb' % (sz / (1024.0 * 1024)))
+            else:
+                print('  get {}'.format(self._url))
+                self.download()
+
+            # Verify hash after download
+            print(' done')
+            print(' file {}'.format(self._filename))
+            if self.verifyHash():
+                print('  hash match - extracting')
+            else:
+                print('  hash check failed - exiting')
+
+        # Extract
+        if '.zip' in self._filename:
+            print('  extracting')
+            self.extract()
+            print('  done')
 
         return True
 
     def download(self):
         try:
-            r = urlopen(self.url, timeout=60)
+            r = urlopen(self._url, timeout=60)
             self.printRequest(r)
             self.save(r)
         except Exception as e:
             print('  catch {}'.format(e))
 
     def extract(self):
+        fileLocation = os.path.join(self._saveTo, self._filename)
         try:
-            with tarfile.open(self.archive) as f:
-                assert self.member in f.getnames()
-                self.save(f.extractfile(self.member))
-        except Exception as e:
-            print('  catch {}'.format(e))
-
-    def extract_all(self):
-        dst = '/'.join(self.filename.split('/')[:-1])
-        try:
-            if self.filename.endswith('.zip'):
-                with zipfile.ZipFile(self.filename) as f:
-                    f.extractall(path=dst)
-            else:
-                with tarfile.open(self.filename) as f:
-                    f.extractall(path=dst)
+            if self._filename.endswith('.zip'):
+                with zipfile.ZipFile(fileLocation) as f:
+                    for member in f.namelist():
+                        path = osp.join(self._extractTo, member)
+                        if osp.exists(path) or osp.isfile(path):
+                            continue
+                        else:
+                            f.extract(member, self._extractTo)
         except Exception as e:
             print(('  catch {}'.format(e)))
 
     def save(self, r):
-        with open(self.filename, 'wb') as f:
+        with open(self._filename, 'wb') as f:
             print('  progress ', end='')
             sys.stdout.flush()
             while True:
@@ -168,40 +161,3 @@ def GDrive(gid):
         print('')
         return sz
     return download_gdrive
-
-datasets = [
-    Dataset(
-        name='WIDER Face',
-        downloader=GDrive('0B6eKvaijfFUDd3dIRmpvSk8tLUk'),
-        sha='3643b3045a491b402b46a22e5ccfe1fdcf3d6c68',
-        filename='datasets/face_detection_widerface/data/WIDER_val.zip',
-        decompress=True
-    ),
-    Dataset(
-        name='WIDER Face',
-        url='http://shuoyang1213.me/WIDERFACE/support/eval_script/eval_tools.zip',
-        sha='a62215ee44ec86c5916176ccc07980a852af9118',
-        filename='datasets/face_detection_widerface/data/eval_tools.zip',
-        decompress=True
-    ),
-]
-
-if __name__ == '__main__':
-    selected_dataset_name = None
-    if len(sys.argv) > 1:
-        selected_dataset_name = sys.argv[1]
-        print('Dataset: ' + selected_dataset_name)
-
-    failedDatasets = []
-    for d in datasets:
-        print(d)
-        if selected_dataset_name is not None and not d.name.startswith(selected_dataset_name):
-            continue
-        if not d.get():
-            failedDatasets.append(d.filename)
-
-    if failedDatasets:
-        print("Following datasets have not been downloaded:")
-        for f in failedDatasets:
-            print("* {}".format(f))
-        exit(15)
