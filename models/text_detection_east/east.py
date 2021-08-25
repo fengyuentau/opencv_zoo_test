@@ -10,62 +10,65 @@ import cv2 as cv
 import numpy as np
 
 class EAST:
-    def __init__(self, model, inputNames, outputNames, inputSize=[320, 320], confThreshold=0.5, nmsThreshold=0.4):
-        self.inputNames = inputNames
-        self.outputNames = outputNames
-        self.inputHeight = inputSize[0]
-        self.inputWidth = inputSize[1]
-        self.confThreshold = confThreshold
-        self.nmsThreshold = nmsThreshold
+    def __init__(self, modelPath, inputNames, outputNames, inputSize=[320, 320], confThreshold=0.5, nmsThreshold=0.4):
+        self._inputNames = inputNames
+        self._outputNames = outputNames
+        self._inputHeight = inputSize[0]
+        self._inputWidth = inputSize[1]
+        self._confThreshold = confThreshold
+        self._nmsThreshold = nmsThreshold
 
-        self.detector = cv.dnn.readNet(model)
+        self._model = cv.dnn.readNet(modelPath)
 
     def setBackend(self, backend):
-        self.model.setPreferableBackend(backend)
+        self._model.setPreferableBackend(backend)
 
     def setTarget(self, target):
-        self.model.setPreferableTarget(target)
+        self._model.setPreferableTarget(target)
 
-    def __preprocess(self, image):
-        return cv.dnn.blobFromImage(image, 1.0, (self.inputWidth, self.inputHeight), (123.68, 116.78, 103.94), True, False)
+    def _preprocess(self, image, target_size):
+        return cv.dnn.blobFromImage(image, 1.0, target_size, (123.68, 116.78, 103.94), True, False)
 
-    def infer(self, image):
-        originalHeight, originalWidth, _ = image.shape
+    def infer(self, image, target_size=None):
+        h, w, _ = image.shape
+        original_size = [w, h]
+        if target_size is None:
+            target_size = original_size
 
         # preprocess
-        inputBlob = self.__preprocess(image)
+        inputBlob = self._preprocess(image, target_size)
 
         # forward
-        self.detector.setInput(inputBlob)
-        outputBlob = self.detector.forward(self.outputNames)
+        self._model.setInput(inputBlob)
+        outputBlob = self._model.forward(self._outputNames)
 
         # postprocess
-        self.rW = originalWidth / float(self.inputWidth)
-        self.rH = originalHeight / float(self.inputHeight)
-        results = self.__postprocess(outputBlob)
+        results = self._postprocess(outputBlob, target_size, original_size)
 
         return results # n x [x0, y0, x1, y1, x2, y2, x3, y3, conf]
 
-    def __postprocess(self, outputBlob):
+    def _postprocess(self, outputBlob, target_size, original_size):
         # Get scores and geometry
         scores = outputBlob[0]
         geometry = outputBlob[1]
 
         # Decode from scores and geometry
-        [boxes, confidences] = self.__decodeBoundingBoxes(scores, geometry, self.confThreshold)
+        [boxes, confidences] = self._decodeBoundingBoxes(scores, geometry, self._confThreshold)
 
         # Apply NMS
-        indices = cv.dnn.NMSBoxesRotated(boxes, confidences, self.confThreshold, self.nmsThreshold)
+        indices = cv.dnn.NMSBoxesRotated(boxes, confidences, self._confThreshold, self._nmsThreshold)
         # box: (x1, y1)---(x2, y2)
         #         |          |
         #      (x0, y0)---(x3, y3)
         # dets: [x0, y0, x1, y1, x2, y2, x3, y3, confidence]
         dets = np.empty(shape=(0, 9), dtype=np.float32)
+        rW = target_size[0] / float(original_size[0])
+        rH = target_size[1] / float(original_size[1])
         for i in indices:
             # get 4 vertices of the rotated rect
             v = cv.boxPoints(boxes[i[0]])
-            v[:, 0] *= self.rW
-            v[:, 1] *= self.rH
+            v[:, 0] *= rW
+            v[:, 1] *= rH
 
             # get confidence
             c = confidences[i[0]]
@@ -75,7 +78,7 @@ class EAST:
 
         return dets
 
-    def __decodeBoundingBoxes(self, scores, geometry, scoreThresh):
+    def _decodeBoundingBoxes(self, scores, geometry, scoreThresh):
         detections = []
         confidences = []
 

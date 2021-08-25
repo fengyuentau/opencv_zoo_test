@@ -7,6 +7,7 @@ Data:
 
 Benchmark:
   name: "Face Detection Benchmark"
+  parentPath: "benchmark/data/face_detection"
   fileList:
     - "group.jpg"
     - "concerts.jpg"
@@ -15,16 +16,12 @@ Benchmark:
     - [160, 120]
     - [640, 480]
   repeat: 100 # default 100
-  parentPath: "benchmark/data/face_detection"
 
 Model:
   name: "YuNet"
-  model: "models/face_detection_yunet/face_detection_yunet.onnx"
+  modelPath: "models/face_detection_yunet/face_detection_yunet.onnx"
   inputNames: ""
-  outputNames:
-    - "loc"
-    - "conf"
-    - "iou"
+  outputNames: ["loc", "conf", "iou"]
   confThreshold: 0.6
   nmsThreshold: 0.3
   topK: 5000

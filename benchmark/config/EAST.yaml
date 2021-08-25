@@ -1,0 +1,25 @@
+Data:
+  name: "Images for Text Detection"
+  url: "https://drive.google.com/u/0/uc?id=1dB_WcQ8C9j7DmibtkxwejHj-8NfODlp8&export=download"
+  sha: "40b007310b945133133fb4e3b0c4ab61788b3e27"
+  filename: "text_detection.zip"
+  parentPath: "benchmark/data"
+
+Benchmark:
+  name: "Text Detection Benchmark"
+  parentPath: "benchmark/data/text_detection"
+  fileList:
+    - "1.jpg"
+    - "2.jpg"
+    - "3.jpg"
+  sizes: # [w, h], default original scale
+    - [160, 120]
+  repeat: 100
+
+Model:
+  name: "EAST"
+  modelPath: "models/text_detection_east/text_detection_east.pb"
+  inputNames: ""
+  outputNames: ""
+  confThreshold: 0.5
+  nmsThreshold: 0.4

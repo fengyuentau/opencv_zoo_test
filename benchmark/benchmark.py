@@ -64,7 +64,7 @@ if __name__ == '__main__':
     # prepend PYTHONPATH to each path
     cfg['Data']['parentPath'] = prepend_pythonpath(cfg['Data']['parentPath'])
     cfg['Benchmark']['parentPath'] = prepend_pythonpath(cfg['Benchmark']['parentPath'])
-    cfg['Model']['model'] = prepend_pythonpath(cfg['Model']['model'])
+    cfg['Model']['modelPath'] = prepend_pythonpath(cfg['Model']['modelPath'])
 
 
     # Download requested data if does not exist

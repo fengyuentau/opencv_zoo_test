@@ -8,48 +8,48 @@ import cv2 as cv
 import numpy as np
 
 class CRNN:
-    def __init__(self, model, inputNames, outputNames, inputSize=[100, 32]):
-        self.model = cv.dnn.readNet(model)
-        self.inputNames = inputNames
-        self.outputNames = outputNames
-        self.inputSize = inputSize
+    def __init__(self, modelPath, inputNames, outputNames, inputSize=[100, 32]):
+        self._model = cv.dnn.readNet(modelPath)
+        self._inputNames = inputNames
+        self._outputNames = outputNames
+        self._inputSize = inputSize
         self.targetVertices = np.array([
-            [0, self.inputSize[1] - 1],
+            [0, self._inputSize[1] - 1],
             [0, 0],
-            [self.inputSize[0] - 1, 0],
-            [self.inputSize[0] - 1, self.inputSize[1] - 1]], dtype="float32")
+            [self._inputSize[0] - 1, 0],
+            [self._inputSize[0] - 1, self._inputSize[1] - 1]], dtype="float32")
 
     def setBackend(self, backend):
-        self.model.setPreferableBackend(backend)
+        self._model.setPreferableBackend(backend)
 
     def setTarget(self, target):
-        self.model.setPreferableTarget(target)
+        self._model.setPreferableTarget(target)
 
-    def __preprocess(self, image, rbbox):
+    def _preprocess(self, image, rbbox):
         # Remove conf, reshape and ensure all is np.float32
         vertices = rbbox[:-1].reshape((4, 2)).astype(np.float32)
 
         rotationMatrix = cv.getPerspectiveTransform(vertices, self.targetVertices)
-        cropped = cv.warpPerspective(image, rotationMatrix, self.inputSize)
+        cropped = cv.warpPerspective(image, rotationMatrix, self._inputSize)
 
         cropped = cv.cvtColor(cropped, cv.COLOR_BGR2GRAY)
 
-        return cv.dnn.blobFromImage(cropped, size=self.inputSize, mean=127.5, scalefactor=1 / 127.5)
+        return cv.dnn.blobFromImage(cropped, size=self._inputSize, mean=127.5, scalefactor=1 / 127.5)
 
     def infer(self, image, rbbox):
         # Preprocess
-        inputBlob = self.__preprocess(image, rbbox)
+        inputBlob = self._preprocess(image, rbbox)
 
         # Forward
-        self.model.setInput(inputBlob)
-        outputBlob = self.model.forward(self.outputNames)
+        self._model.setInput(inputBlob)
+        outputBlob = self._model.forward(self._outputNames)
 
         # Postprocess
-        results = self.__postprocess(outputBlob)
+        results = self._postprocess(outputBlob)
 
         return results
 
-    def __postprocess(self, outputBlob):
+    def _postprocess(self, outputBlob):
         '''Decode charaters from outputBlob
         '''
         text = ""
