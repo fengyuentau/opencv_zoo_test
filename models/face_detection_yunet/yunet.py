@@ -32,13 +32,13 @@ class YuNet:
         self._model.setPreferableTarget(target)
 
     def _preprocess(self, image, target_size):
-        return cv.dnn.blobFromImage(image, size=target_size)
+        return cv.dnn.blobFromImage(image, size=tuple(target_size))
 
     def infer(self, image, target_size=None):
         h, w, _ = image.shape
-        original_size = [w, h]
+        original_size = (w, h)
         if target_size is None:
-            target_size = [w, h]
+            target_size = (w, h)
 
         # Preprocess
         inputBlob = self._preprocess(image, target_size)

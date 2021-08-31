@@ -50,11 +50,11 @@ def build_from_cfg(cfg, registery):
     obj = registery.get(obj_name)
     return obj(**cfg)
 
-def prepend_pythonpath(path):
+def prepend_pythonpath(cfg, key1, key2):
     pythonpath = os.environ['PYTHONPATH']
-    if path.startswith('/'):
-        return path
-    return os.path.join(pythonpath, path)
+    if cfg[key1][key2].startswith('/'):
+        return
+    cfg[key1][key2] = os.path.join(pythonpath, cfg[key1][key2])
 
 if __name__ == '__main__':
     assert args.cfg.endswith('yaml')
@@ -62,9 +62,9 @@ if __name__ == '__main__':
         cfg = yaml.safe_load(f)
 
     # prepend PYTHONPATH to each path
-    cfg['Data']['parentPath'] = prepend_pythonpath(cfg['Data']['parentPath'])
-    cfg['Benchmark']['parentPath'] = prepend_pythonpath(cfg['Benchmark']['parentPath'])
-    cfg['Model']['modelPath'] = prepend_pythonpath(cfg['Model']['modelPath'])
+    prepend_pythonpath(cfg, key1='Data', key2='parentPath')
+    prepend_pythonpath(cfg, key1='Benchmark', key2='parentPath')
+    prepend_pythonpath(cfg, key1='Model', key2='modelPath')
 
 
     # Download requested data if does not exist
