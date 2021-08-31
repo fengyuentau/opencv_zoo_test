@@ -35,13 +35,5 @@ class DB:
     def setTarget(self, target):
         self._model.setPreferableTarget(target)
 
-    def infer(self, image, target_size):
+    def infer(self, image, target_size=None):
         return self._model.detect(image)
-
-if __name__ == '__main__':
-    image = cv.imread('../../images/text_detection/firstaid.jpg')
-
-    model = DB('text_detection_db.onnx', "", "")
-    res = model.infer(image, "")
-
-    print(res)
