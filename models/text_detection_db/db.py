@@ -22,7 +22,6 @@ class DB:
 
         net = cv.dnn.readNet(self._modelPath)
         self._model = cv.dnn_TextDetectionModel_DB(net)
-        print(self._model)
         self._model.setBinaryThreshold(self._binaryThreshold)
         self._model.setPolygonThreshold(self._polygonThreshold)
         self._model.setUnclipRatio(self._unclipRatio)
@@ -42,7 +41,7 @@ class DB:
 if __name__ == '__main__':
     image = cv.imread('../../images/text_detection/firstaid.jpg')
 
-    model = DB('DB_IC15_resnet18_en.onnx', "", "")
+    model = DB('text_detection_db.onnx', "", "")
     res = model.infer(image, "")
 
     print(res)

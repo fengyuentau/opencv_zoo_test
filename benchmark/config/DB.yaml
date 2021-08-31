@@ -18,7 +18,7 @@ Benchmark:
 
 Model:
   name: "DB"
-  modelPath: "models/text_detection_db/DB_IC15_resnet18_en.onnx"
+  modelPath: "models/text_detection_db/text_detection_db.onnx"
   inputNames: ""
   outputNames: ""
   inputSize: [736, 736]

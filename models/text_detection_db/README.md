@@ -7,17 +7,13 @@ Real-time Scene Text Detection with Differentiable Binarization.
 Run the following command to try the demo:
 ```shell
 # detect from an image
-python detect_image.py --input /path/to/image --model ./DB_IC15_resnet18_en.onnx
+python detect_image.py --input /path/to/image --model ./text_detection_db.onnx
 # detect using a camera
-python detect_camera.py --model ./DB_IC15_resnet18_en.onnx
+python detect_camera.py --model ./text_detection_db.onnx
 ```
 
 ## Model Descripton
-There are two pre-trained model,
-- DB_IC15_resnet18_en.onnx is for English.
-- DB_TD500_resnet18_cn.onnx is for Chinese.
-
-And if you wan to get more pre-trained DB models, please refer https://docs.opencv.org/4.5.1/d4/d43/tutorial_dnn_text_spotting.html.
+`text_detection_db.onnx` detects both English & Chinese instances, and is renamed and obtained from `DB_TD500_resnet18.onnx`(https://docs.opencv.org/master/d4/d43/tutorial_dnn_text_spotting.html).
 
 ## Licence
 
