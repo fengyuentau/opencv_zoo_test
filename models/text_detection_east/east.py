@@ -27,13 +27,12 @@ class EAST:
         self._model.setPreferableTarget(target)
 
     def _preprocess(self, image, target_size):
-        return cv.dnn.blobFromImage(image, 1.0, target_size, (123.68, 116.78, 103.94), True, False)
+        return cv.dnn.blobFromImage(image, 1.0, (self._inputWidth, self._inputHeight), (123.68, 116.78, 103.94), True, False)
 
     def infer(self, image, target_size=None):
         h, w, _ = image.shape
         original_size = [w, h]
-        if target_size is None:
-            target_size = original_size
+        target_size = (self._inputWidth, self._inputHeight)
 
         # preprocess
         inputBlob = self._preprocess(image, target_size)

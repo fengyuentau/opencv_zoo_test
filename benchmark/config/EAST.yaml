@@ -13,13 +13,14 @@ Benchmark:
     - "2.jpg"
     - "3.jpg"
   sizes: # [w, h], default original scale
-    - [160, 120]
+    - [320, 320]
   repeat: 100
 
 Model:
   name: "EAST"
   modelPath: "models/text_detection_east/text_detection_east.pb"
   inputNames: ""
-  outputNames: ""
+  outputNames: ["feature_fusion/Conv_7/Sigmoid", "feature_fusion/concat_3"]
+  inputSize: [320, 320]
   confThreshold: 0.5
   nmsThreshold: 0.4
