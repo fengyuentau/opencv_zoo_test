@@ -1,5 +1,6 @@
 from .face_detection_yunet.yunet import YuNet
 from .text_detection_east.east import EAST
+from .text_detection_db.db import DB
 # from .text_recognition.crnn import CRNN
 
 class Registery:
@@ -16,3 +17,4 @@ class Registery:
 MODELS = Registery('Models')
 MODELS.register(YuNet)
 MODELS.register(EAST)
+MODELS.register(DB)

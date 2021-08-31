@@ -12,6 +12,7 @@ import numpy as np
 class DB:
     def __init__(self, modelPath, inputNames, outputNames, inputSize=[736, 736], binaryThreshold=0.3, polygonThreshold=0.5, maxCandidates=200, unclipRatio=2.0):
         self._modelPath = modelPath
+        self._inputSize = tuple(inputSize)
         self._inputHeight = inputSize[0]
         self._inputWidth = inputSize[1]
         self._binaryThreshold = binaryThreshold
@@ -21,12 +22,13 @@ class DB:
 
         net = cv.dnn.readNet(self._modelPath)
         self._model = cv.dnn_TextDetectionModel_DB(net)
+        print(self._model)
         self._model.setBinaryThreshold(self._binaryThreshold)
         self._model.setPolygonThreshold(self._polygonThreshold)
         self._model.setUnclipRatio(self._unclipRatio)
         self._model.setMaxCandidates(self._maxCandidates)
 
-        self._model.setInputParams(1.0/255.0, inputSize, (122.67891434, 116.66876762, 104.00698793))
+        self._model.setInputParams(1.0/255.0, self._inputSize, (122.67891434, 116.66876762, 104.00698793))
 
     def setBackend(self, backend):
         self._model.setPreferableBackend(backend)
@@ -34,13 +36,13 @@ class DB:
     def setTarget(self, target):
         self._model.setPreferableTarget(target)
 
-    def infer(self, image):
+    def infer(self, image, target_size):
         return self._model.detect(image)
 
 if __name__ == '__main__':
     image = cv.imread('../../images/text_detection/firstaid.jpg')
 
-    model = DB('text_detection_db18.onnx')
-    res = model.infer(image)
+    model = DB('DB_IC15_resnet18_en.onnx', "", "")
+    res = model.infer(image, "")
 
     print(res)

@@ -13,14 +13,16 @@ Benchmark:
     - "2.jpg"
     - "3.jpg"
   sizes: # [w, h], default original scale
-    - [160, 120]
+    - [736, 736]
   repeat: 100
 
 Model:
   name: "DB"
-  modelPath: "models/text_detection_db/text_detection_db.onnx"
+  modelPath: "models/text_detection_db/DB_IC15_resnet18_en.onnx"
   inputNames: ""
   outputNames: ""
-  inputSize: [320, 320]
-  confThreshold: 0.5
-  nmsThreshold: 0.4
+  inputSize: [736, 736]
+  binaryThreshold: 0.3
+  polygonThreshold: 0.5
+  maxCandidates: 200
+  unclipRatio: 2.0
